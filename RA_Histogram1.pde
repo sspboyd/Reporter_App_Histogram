@@ -3,7 +3,7 @@ import org.joda.time.*;
 
 JSONObject raj;
 
-int bucketSize = 60; // in minutes
+int bucketSize = 30; // in minutes
 int[] buckets = new int[(24*60)/bucketSize];
 /*
 What is needed for a basic histogram:
@@ -128,10 +128,10 @@ void setup() {
   for(int i=0; i<buckets.length; i++){
     println(i + " " + buckets[i]);
     float rectX = i*rectW;
-    fill(map(buckets[i],0,51,0,255));
-    rect(rectX,0,rectX,height);
+    fill(map(buckets[i],0,max(buckets),0,255));
+    rect(rectX,0,rectW,height);
     fill(0);
-    text(i/1,rectX,height/2);
+    text(i/1,rectX+rectW/3,height/2);
     
   }
 

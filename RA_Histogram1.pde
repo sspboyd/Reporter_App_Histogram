@@ -116,7 +116,7 @@ void setup() {
             println("snap #" + i + " minute of day = " + sdt.minuteOfDay());
             println("snap #" + i + " time of day = " + sdt);
             println("questions response # " + productiveRespCounter++ +" == " + ans.getString(0));
-            int bucketNo = floor(parseInt(sdt.minuteOfDay().getAsText())/60);
+            int bucketNo = floor(parseInt(sdt.minuteOfDay().getAsText())/bucketSize);
             buckets[bucketNo]++;
           }
         }
@@ -130,6 +130,8 @@ void setup() {
     float rectX = i*rectW;
     fill(map(buckets[i],0,51,0,255));
     rect(rectX,0,rectX,height);
+    fill(0);
+    text(i/1,rectX,height/2);
     
   }
 

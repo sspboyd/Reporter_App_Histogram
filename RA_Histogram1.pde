@@ -3,8 +3,10 @@ import org.joda.time.*;
 
 JSONObject raj;
 
-int bucketSize = 30; // in minutes
+int bucketSize = 60; // in minutes
 int[] buckets = new int[(24*60)/bucketSize];
+int[] noBuckets = new int[(24*60)/bucketSize];
+
 /*
 What is needed for a basic histogram:
  
@@ -58,6 +60,8 @@ void setup() {
     size(800, 450); // quarter page size
   }
 
+  mainTitleF = createFont("Helvetica", 18);  //requires a font file in the data folder?
+  textFont(mainTitleF);
   margin = width * pow(PHI, 6);
   println("margin: " + margin);
   PLOT_X1 = margin;
@@ -112,42 +116,52 @@ void setup() {
       if (question.equals("Have you been productive over the last couple of hours?") == true) {
         if (resp.hasKey("answeredOptions")) {  
           JSONArray ans = resp.getJSONArray("answeredOptions");
-          if(ans.getString(0).equals("Yes")){
-            println("snap #" + i + " minute of day = " + sdt.minuteOfDay());
-            println("snap #" + i + " time of day = " + sdt);
-            println("questions response # " + productiveRespCounter++ +" == " + ans.getString(0));
+          if (ans.getString(0).equals("Yes")) {
+            // println("snap #" + i + " minute of day = " + sdt.minuteOfDay());
+            // println("snap #" + i + " time of day = " + sdt);
+            // println("questions response # " + productiveRespCounter++ +" == " + ans.getString(0));
             int bucketNo = floor(parseInt(sdt.minuteOfDay().getAsText())/bucketSize);
             buckets[bucketNo]++;
+          } 
+          else {
+            int bucketNo = floor(parseInt(sdt.minuteOfDay().getAsText())/bucketSize);
+            noBuckets[bucketNo]++;
           }
         }
       }
     }
   }
-  float rectW = width/buckets.length;
-  noStroke();
-  for(int i=0; i<buckets.length; i++){
+  float rectW = PLOT_W/buckets.length;
+  // noStroke();
+  int maxBucketVal = max(buckets) > max(noBuckets) ? max(buckets) : max(noBuckets); 
+  for (int i=0; i<buckets.length; i++) {
     println(i + " " + buckets[i]);
-    float rectX = i*rectW;
-    fill(map(buckets[i],0,max(buckets),0,255));
-    rect(rectX,0,rectW,height);
-    fill(0);
-    text(i/1,rectX+rectW/3,height/2);
-    
+    float rectX = i*rectW+PLOT_X1;
+    // fill(map(buckets[i],0,max(buckets),0,250));
+    strokeWeight(.25);
+    stroke(0);
+    fill(225);
+    rect(rectX, height/2, rectW, map(buckets[i], 0, maxBucketVal, 0, -PLOT_H/2));
+    stroke(255);
+    fill(75);
+    rect(rectX, height/2, rectW, map(noBuckets[i], 0, maxBucketVal, 0, PLOT_H/2));
+    fill(29);
+    text(i/1, rectX+rectW/3+1, height/2+1);
+    fill(250);
+    text(i/1, rectX+rectW/3, height/2);
   }
 
-  mainTitleF = createFont("Helvetica", 18);  //requires a font file in the data folder?
   noLoop();
   println("setup done: " + nf(millis() / 1000.0, 1, 2));
 }
 
 void draw() {
   //   background(255);
-  fill(0);
+  fill(100);
   stroke(0);
   textFont(mainTitleF);
   text("sspboyd", PLOT_X2-textWidth("sspboyd"), PLOT_Y2);
 
-  line(mouseX, mouseY-150, mouseX, mouseY+150);
 
 
   if (PDFOUT) exit();

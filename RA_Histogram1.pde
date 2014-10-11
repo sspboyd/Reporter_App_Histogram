@@ -2,36 +2,12 @@ import processing.pdf.*;
 import org.joda.time.*;
 
 JSONObject raj;
+JSONArray snapshots;
+DateTimeFormatter dtf;
 
-int bucketSize = 60; // in minutes
+int bucketSize = 30; // in minutes
 int[] buckets = new int[(24*60)/bucketSize];
 int[] noBuckets = new int[(24*60)/bucketSize];
-
-/*
-What is needed for a basic histogram:
- 
- Set a bucket size{
- is it a time eg, 5mins, or a number of buckets eg, 24 buckets = 1hr each?
- }
- 
- Create a table of data points to be _counted_
- Counted doesnt mean include every data point. Eg, if counting number of times I'm Reporter App reporting that I've been
- productive, I don't need to include the times I said I hadn't been productive. 
- This takes the need to test the data within the histogram code. Goes into a data cleaning/preparing stage. 
- 
- for each recorded report, 
- If reported productive? add table row with reported time and boolean value true? (or do I just need the time? make it a 
- straight arraylist?)
- 
- histogram(bucket size, Table/HashMap of Time and values){
- for each item in the Table/HashMap{
- if 
- }
- }
- 
- */
-
-
 
 //Declare Globals
 int rSn; // randomSeed number. put into var so can be saved in file name. defaults to 47
@@ -71,17 +47,43 @@ void setup() {
   PLOT_W = PLOT_X2 - PLOT_X1;
   PLOT_H = PLOT_Y2 - PLOT_Y1;
 
-
   rSn = 47; // 29, 18;
   randomSeed(rSn);
 
 
   raj = loadJSONObject("reporter-export-20140903.json");
 
-  DateTimeFormatter dtf = ISODateTimeFormat.dateTimeNoMillis();
+  dtf = ISODateTimeFormat.dateTimeNoMillis();
 
-  JSONArray snapshots = raj.getJSONArray("snapshots");
+  snapshots = raj.getJSONArray("snapshots");
+
+
+  noLoop();
+  println("setup done: " + nf(millis() / 1000.0, 1, 2));
+}
+
+void draw() {
+  background(255);
+
+  // renderHisto("Has today been productive so far?");
+  renderHisto("Have you been productive over the last couple of hours?");
+  // renderHisto("Did you eat after 9pm?");
+  // renderHisto("Are you working?");
+
+
+  fill(100);
+  stroke(0);
+  textFont(mainTitleF);
+  text("sspboyd", PLOT_X2-textWidth("sspboyd"), PLOT_Y2);
+
+  if (PDFOUT) exit();
+}
+
+
+void renderHisto(String _q) {
+  String question = _q;
   int productiveRespCounter = 0;
+  int missingQuestionPromptCount = 0;
   for (int i = 0; i < snapshots.size(); i+=1) {
     JSONObject snap = snapshots.getJSONObject(i);
     String sdts = snap.getString("date"); // sdts = snapshot datetime string
@@ -100,20 +102,16 @@ void setup() {
     for (int j = 0; j < resps.size(); j+=1) { // +=100 to make sure it only shows 1 for each snap
       JSONObject resp = resps.getJSONObject(j);
       // println("resp == " + resp);
-      String question = "";
+      String questionPrompt = "";
       if (resp.hasKey("questionPrompt")) {  
-        question = resp.getString("questionPrompt");
+        questionPrompt = resp.getString("questionPrompt");
         // println("resp question: " + question);
       }
       else {
-        println("###########################");
-        println("!!!QuestionPromptMissing!!!");
-        println(sdt);
-        println("###########################");
+        println("Missing Question Prompt? #" + ++missingQuestionPromptCount +" " + sdt);
       }
 
-
-      if (question.equals("Have you been productive over the last couple of hours?") == true) {
+      if (questionPrompt.equals(question) == true) {
         if (resp.hasKey("answeredOptions")) {  
           JSONArray ans = resp.getJSONArray("answeredOptions");
           if (ans.getString(0).equals("Yes")) {
@@ -131,11 +129,12 @@ void setup() {
       }
     }
   }
+
   float rectW = PLOT_W/buckets.length;
   // noStroke();
   int maxBucketVal = max(buckets) > max(noBuckets) ? max(buckets) : max(noBuckets); 
   for (int i=0; i<buckets.length; i++) {
-    println(i + " " + buckets[i]);
+    // println(i + " " + buckets[i]);
     float rectX = i*rectW+PLOT_X1;
     // fill(map(buckets[i],0,max(buckets),0,250));
     strokeWeight(.25);
@@ -145,26 +144,29 @@ void setup() {
     stroke(255);
     fill(75);
     rect(rectX, height/2, rectW, map(noBuckets[i], 0, maxBucketVal, 0, PLOT_H/2));
-    fill(29);
-    text(i/1, rectX+rectW/3+1, height/2+1);
-    fill(250);
-    text(i/1, rectX+rectW/3, height/2);
   }
-
-  noLoop();
-  println("setup done: " + nf(millis() / 1000.0, 1, 2));
-}
-
-void draw() {
-  //   background(255);
-  fill(100);
-  stroke(0);
-  textFont(mainTitleF);
-  text("sspboyd", PLOT_X2-textWidth("sspboyd"), PLOT_Y2);
-
-
-
-  if (PDFOUT) exit();
+  // Title
+  fill(0);
+  text(question, PLOT_X1, PLOT_Y2);
+  
+  // Vertical Scale
+  strokeWeight(.25);
+  stroke(47);
+  line(PLOT_X1, PLOT_Y1,PLOT_X1, PLOT_Y2);
+  text(maxBucketVal, PLOT_X1 - textWidth(str(maxBucketVal)) - 5, PLOT_Y1 + textAscent()/2);  
+  text(-maxBucketVal, PLOT_X1 - textWidth(str(maxBucketVal)) - 5, PLOT_Y2 - textAscent()/2);
+  
+  // Horizontal Scale (Time in hours)
+  int startTime = 0;
+  int finishTime = 23;
+  for(int i = startTime; i < finishTime+1; i++){
+      float timeX = map(i, startTime, finishTime+1, PLOT_X1, PLOT_X2);
+      fill(29);
+      text(str(i), timeX+1, (PLOT_H/2 + PLOT_Y1)+1+textAscent()/2);
+      fill(250);
+      text(str(i), timeX, (PLOT_H/2 + PLOT_Y1)+textAscent()/2);
+  }
+  
 }
 
 void keyPressed() {

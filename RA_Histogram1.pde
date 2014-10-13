@@ -159,7 +159,7 @@ void renderHisto(String _q) {
   float rectW = PLOT_W/buckets.length;
   // noStroke();
   int maxBucketVal = max(buckets) > max(noBuckets) ? max(buckets) : max(noBuckets); // find the bucket with the highest # of responses
-  for (int i=0; i<buckets.length; i++) {
+  for (int i=0; i<buckets.length-1; i++) {
     // println(i + " " + buckets[i]);
     float rectX = i * rectW + PLOT_X1;
     // fill(map(buckets[i],0,max(buckets),0,250));
@@ -167,11 +167,16 @@ void renderHisto(String _q) {
     stroke(0);
     fill(225);
     rect(rectX, height/2, rectW, map(buckets[i], 0, maxBucketVal, 0, -PLOT_H/2));
-    println("buckets["+i+"] == " + buckets[i]);
     stroke(255);
     fill(75);
     rect(rectX, height/2, rectW, map(noBuckets[i], 0, maxBucketVal, 0, PLOT_H/2));
   }
+
+for (int k = 0; k < buckets.length; k++) {
+      println("buckets["+k+"] == " + buckets[k]);
+
+
+}
   
   // Plus / Minus trend line
   noFill();
@@ -212,7 +217,7 @@ void renderHisto(String _q) {
   text(maxBucketVal, PLOT_X1 - textWidth(str(maxBucketVal)) - 5, PLOT_Y2 - textAscent()/2);
   
   // Horizontal Scale (Time in hours)
-  for(int i = startTime/60; i < finishTime / 60 + 1; i++){
+  for(int i = startTime/60; i < finishTime / 60; i++){
       float timeX = map(i, startTime/60, finishTime/60+1, PLOT_X1, PLOT_X2);
       fill(29);
       text(str(i), timeX+1, (PLOT_H/2 + PLOT_Y1)+1+textAscent()/2);

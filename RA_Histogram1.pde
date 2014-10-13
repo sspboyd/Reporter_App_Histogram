@@ -4,10 +4,15 @@ import org.joda.time.*;
 JSONObject raj;
 JSONArray snapshots;
 DateTimeFormatter dtf;
+int startTime; // starting time/point (?) of the scale in minutes
+int finishTime; // finishing time/point (?) in minutes
+int scaleDuration; // pretty clear, finishTime - startTime (done in setup())
+int bucketSize; // what is the range of time (in minutes) covered by each histogram bucket
 
-int bucketSize = 30; // in minutes
-int[] buckets = new int[(24*60)/bucketSize];
-int[] noBuckets = new int[(24*60)/bucketSize];
+int[] buckets; // the yes buckets
+int[] noBuckets; // clearly, the no buckets
+// Not sure if I need a "timeline type" variable to specify if measuring intra day, or week or year etc...
+
 
 //Declare Globals
 int rSn; // randomSeed number. put into var so can be saved in file name. defaults to 47
@@ -30,10 +35,10 @@ float PLOT_X1, PLOT_X2, PLOT_Y1, PLOT_Y2, PLOT_W, PLOT_H;
 void setup() {
   background(255);
   if (PDFOUT) {
-    size(800, 450, PDF, generateSaveImgFileName(".pdf"));
+    size(1350, 450, PDF, generateSaveImgFileName(".pdf"));
   }
   else {
-    size(800, 450); // quarter page size
+    size(1350, 450); // quarter page size
   }
 
   mainTitleF = createFont("Helvetica", 18);  //requires a font file in the data folder?
@@ -57,8 +62,25 @@ void setup() {
 
   snapshots = raj.getJSONArray("snapshots");
 
+  // Define Variables for histogram bucket size and scale durations
+   startTime = 0 * 60; // in minutes
+   finishTime = 24 * 60; // in minutes
+   scaleDuration = (finishTime - startTime); 
+
+
+  //  bucketSize = 60 * 24; // in minutes for a week view
+   bucketSize = 60; // in minutes
+
+  // If measuring over the course of a day
+  buckets = new int[scaleDuration/bucketSize];
+  noBuckets = new int[scaleDuration/bucketSize];
+
+
 
   noLoop();
+  println("bucketSize == " + bucketSize);
+  println("buckets == " + buckets.length);
+  println("noBuckets == " + noBuckets.length);
   println("setup done: " + nf(millis() / 1000.0, 1, 2));
 }
 
@@ -108,21 +130,25 @@ void renderHisto(String _q) {
         // println("resp question: " + question);
       }
       else {
-        println("Missing Question Prompt? #" + ++missingQuestionPromptCount +" " + sdt);
+        // println("Missing Question Prompt? #" + ++missingQuestionPromptCount +" " + sdt);
       }
 
       if (questionPrompt.equals(question) == true) {
-        if (resp.hasKey("answeredOptions")) {  
+        if (resp.hasKey("answeredOptions")) {
           JSONArray ans = resp.getJSONArray("answeredOptions");
           if (ans.getString(0).equals("Yes")) {
+            productiveRespCounter++;
             // println("snap #" + i + " minute of day = " + sdt.minuteOfDay());
             // println("snap #" + i + " time of day = " + sdt);
             // println("questions response # " + productiveRespCounter++ +" == " + ans.getString(0));
-            int bucketNo = floor(parseInt(sdt.minuteOfDay().getAsText())/bucketSize);
+            int bucketNo = floor(parseInt(sdt.minuteOfDay().getAsText())/bucketSize); // intra day 
+            // int bucketNo = sdt.getDayOfWeek()-1; // intra week
             buckets[bucketNo]++;
           } 
           else {
+            productiveRespCounter++;
             int bucketNo = floor(parseInt(sdt.minuteOfDay().getAsText())/bucketSize);
+            // int bucketNo = sdt.getDayOfWeek()-1;
             noBuckets[bucketNo]++;
           }
         }
@@ -132,35 +158,62 @@ void renderHisto(String _q) {
 
   float rectW = PLOT_W/buckets.length;
   // noStroke();
-  int maxBucketVal = max(buckets) > max(noBuckets) ? max(buckets) : max(noBuckets); 
+  int maxBucketVal = max(buckets) > max(noBuckets) ? max(buckets) : max(noBuckets); // find the bucket with the highest # of responses
   for (int i=0; i<buckets.length; i++) {
     // println(i + " " + buckets[i]);
-    float rectX = i*rectW+PLOT_X1;
+    float rectX = i * rectW + PLOT_X1;
     // fill(map(buckets[i],0,max(buckets),0,250));
     strokeWeight(.25);
     stroke(0);
     fill(225);
     rect(rectX, height/2, rectW, map(buckets[i], 0, maxBucketVal, 0, -PLOT_H/2));
+    println("buckets["+i+"] == " + buckets[i]);
     stroke(255);
     fill(75);
     rect(rectX, height/2, rectW, map(noBuckets[i], 0, maxBucketVal, 0, PLOT_H/2));
   }
+  
+  // Plus / Minus trend line
+  noFill();
+  strokeWeight(5);
+  stroke(50);
+  beginShape();
+  // extra vertex added so that line starts on the first bucket
+    float pmv = buckets[buckets.length-1] - noBuckets[buckets.length-1];
+    float pmvY = map(pmv, maxBucketVal, -maxBucketVal, PLOT_Y1, PLOT_Y2);
+    float pmvX = PLOT_X1 - rectW/2;
+    curveVertex(pmvX, pmvY);
+  
+  for (int i=0; i<buckets.length; i++) {
+   pmv = buckets[i]-noBuckets[i];
+   pmvY = map(pmv, maxBucketVal, -maxBucketVal, PLOT_Y1, PLOT_Y2);
+   pmvX = map(i, 0, buckets.length, PLOT_X1, PLOT_X2)+rectW/2;
+    // fill(0);
+    // ellipse(pmvX, pmvY, rectW/2, rectW/2);
+    curveVertex(pmvX, pmvY);
+  }
+  // extra vertex added so that the line ends on the last bucket
+     pmv = buckets[0]-noBuckets[0];
+     pmvY = map(pmv, maxBucketVal, -maxBucketVal, PLOT_Y1, PLOT_Y2);
+     pmvX = PLOT_X2 + rectW/2;
+    curveVertex(pmvX, pmvY);
+  endShape();
+  
+  
   // Title
   fill(0);
-  text(question, PLOT_X1, PLOT_Y2);
+  text(question + " " + productiveRespCounter + " responses.", PLOT_X1, PLOT_Y2);
   
   // Vertical Scale
   strokeWeight(.25);
   stroke(47);
   line(PLOT_X1, PLOT_Y1,PLOT_X1, PLOT_Y2);
   text(maxBucketVal, PLOT_X1 - textWidth(str(maxBucketVal)) - 5, PLOT_Y1 + textAscent()/2);  
-  text(-maxBucketVal, PLOT_X1 - textWidth(str(maxBucketVal)) - 5, PLOT_Y2 - textAscent()/2);
+  text(maxBucketVal, PLOT_X1 - textWidth(str(maxBucketVal)) - 5, PLOT_Y2 - textAscent()/2);
   
   // Horizontal Scale (Time in hours)
-  int startTime = 0;
-  int finishTime = 23;
-  for(int i = startTime; i < finishTime+1; i++){
-      float timeX = map(i, startTime, finishTime+1, PLOT_X1, PLOT_X2);
+  for(int i = startTime/60; i < finishTime / 60 + 1; i++){
+      float timeX = map(i, startTime/60, finishTime/60+1, PLOT_X1, PLOT_X2);
       fill(29);
       text(str(i), timeX+1, (PLOT_H/2 + PLOT_Y1)+1+textAscent()/2);
       fill(250);

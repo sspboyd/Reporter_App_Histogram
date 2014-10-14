@@ -38,10 +38,10 @@ void setup() {
     size(1350, 450, PDF, generateSaveImgFileName(".pdf"));
   }
   else {
-    size(1350, 450); // quarter page size
+    size(1200, 450); // quarter page size
   }
 
-  mainTitleF = createFont("Helvetica", 18);  //requires a font file in the data folder?
+  mainTitleF = createFont("Helvetica", 20);  //requires a font file in the data folder?
   textFont(mainTitleF);
   margin = width * pow(PHI, 6);
   println("margin: " + margin);
@@ -69,22 +69,23 @@ void setup() {
 
 
   //  bucketSize = 60 * 24; // in minutes for a week view
-   bucketSize = 60; // in minutes
+   bucketSize = 30; // in minutes
 
   // If measuring over the course of a day
-  buckets = new int[scaleDuration/bucketSize];
-  noBuckets = new int[scaleDuration/bucketSize];
+  // no need to declare twice. Already declaring at start of draw. 
+  // Maybe reconfigure later so that I'm not calculating this everytime through the draw func and only 
+  // when one of the config options is changed, e.g. question, scale duration, bucket size?
+  // buckets = new int[scaleDuration/bucketSize]; 
+  // noBuckets = new int[scaleDuration/bucketSize];
 
 
 
-  noLoop();
-  println("bucketSize == " + bucketSize);
-  println("buckets == " + buckets.length);
-  println("noBuckets == " + noBuckets.length);
+  // noLoop();
   println("setup done: " + nf(millis() / 1000.0, 1, 2));
 }
 
 void draw() {
+
   background(255);
 
   // renderHisto("Has today been productive so far?");
@@ -103,6 +104,9 @@ void draw() {
 
 
 void renderHisto(String _q) {
+  buckets = new int[scaleDuration/bucketSize];
+  noBuckets = new int[scaleDuration/bucketSize];
+
   String question = _q;
   int productiveRespCounter = 0;
   int missingQuestionPromptCount = 0;
@@ -117,7 +121,7 @@ void renderHisto(String _q) {
     } 
     catch (IllegalArgumentException e) {
       sdt = null;
-      println(i + " oops, something went wrong");
+      // println(i + " oops, something went wrong");
     }
 
     JSONArray resps = snap.getJSONArray("responses");
@@ -141,7 +145,7 @@ void renderHisto(String _q) {
             // println("snap #" + i + " minute of day = " + sdt.minuteOfDay());
             // println("snap #" + i + " time of day = " + sdt);
             // println("questions response # " + productiveRespCounter++ +" == " + ans.getString(0));
-            int bucketNo = floor(parseInt(sdt.minuteOfDay().getAsText())/bucketSize); // intra day 
+            int bucketNo = floor(parseInt(sdt.minuteOfDay().getAsText())/bucketSize); // intra day // need better var name
             // int bucketNo = sdt.getDayOfWeek()-1; // intra week
             buckets[bucketNo]++;
           } 
@@ -159,7 +163,7 @@ void renderHisto(String _q) {
   float rectW = PLOT_W/buckets.length;
   // noStroke();
   int maxBucketVal = max(buckets) > max(noBuckets) ? max(buckets) : max(noBuckets); // find the bucket with the highest # of responses
-  for (int i=0; i<buckets.length-1; i++) {
+  for (int i=0; i<buckets.length; i++) {
     // println(i + " " + buckets[i]);
     float rectX = i * rectW + PLOT_X1;
     // fill(map(buckets[i],0,max(buckets),0,250));
@@ -173,14 +177,12 @@ void renderHisto(String _q) {
   }
 
 for (int k = 0; k < buckets.length; k++) {
-      println("buckets["+k+"] == " + buckets[k]);
-
-
+      // println("buckets["+k+"] == " + buckets[k]);
 }
   
   // Plus / Minus trend line
   noFill();
-  strokeWeight(5);
+  strokeWeight(4);
   stroke(50);
   beginShape();
   // extra vertex added so that line starts on the first bucket
@@ -205,6 +207,25 @@ for (int k = 0; k < buckets.length; k++) {
   endShape();
   
   
+ // Draw labels
+if(mouseX > PLOT_X1 && mouseX < PLOT_X2 && mouseY > PLOT_Y1 && mouseY < PLOT_Y2){
+  // print("In the box!");
+  float labelX, labelY;
+  // labelX = mouseX;
+  int bucketIndx = floor((mouseX - PLOT_X1) / rectW);
+  labelX = PLOT_X1 + (bucketIndx * rectW) + (rectW / 2);
+  pmv = buckets[bucketIndx]-noBuckets[bucketIndx];
+  labelY = map(pmv, maxBucketVal, -maxBucketVal, PLOT_Y1, PLOT_Y2);
+  String labelText = "Yes: " + buckets[bucketIndx] + "\nNo: " + noBuckets[bucketIndx];
+  fill(255,227);
+  noStroke();
+  rect(labelX, labelY-18, 100, 47);
+  ellipse(labelX, labelY, 20, 20);
+  fill(0);
+  text(labelText+11, labelX, labelY);
+}
+
+
   // Title
   fill(0);
   text(question + " " + productiveRespCounter + " responses.", PLOT_X1, PLOT_Y2);
@@ -217,8 +238,8 @@ for (int k = 0; k < buckets.length; k++) {
   text(maxBucketVal, PLOT_X1 - textWidth(str(maxBucketVal)) - 5, PLOT_Y2 - textAscent()/2);
   
   // Horizontal Scale (Time in hours)
-  for(int i = startTime/60; i < finishTime / 60; i++){
-      float timeX = map(i, startTime/60, finishTime/60+1, PLOT_X1, PLOT_X2);
+  for(int i = startTime/60; i < (finishTime) / 60; i++){
+      float timeX = map(i, startTime/60, finishTime/60, PLOT_X1, PLOT_X2);
       fill(29);
       text(str(i), timeX+1, (PLOT_H/2 + PLOT_Y1)+1+textAscent()/2);
       fill(250);
@@ -229,6 +250,16 @@ for (int k = 0; k < buckets.length; k++) {
 
 void keyPressed() {
   if (key == 'S') screenCap(".tif");
+
+  if (key == 'L'){
+  println("bucketSize == " + bucketSize);
+  println("buckets == " + buckets.length);
+  println("noBuckets == " + noBuckets.length);
+for (int i = 0; i < buckets.length; ++i) {
+  println("Yes bucket #" + i + " == " + buckets[i]);
+  println("No bucket  #" + i + " == " + noBuckets[i]);
+}
+  }
 }
 
 void mousePressed() {

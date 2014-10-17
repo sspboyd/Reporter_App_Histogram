@@ -207,25 +207,6 @@ for (int k = 0; k < buckets.length; k++) {
   endShape();
   
   
- // Draw labels
-if(mouseX > PLOT_X1 && mouseX < PLOT_X2 && mouseY > PLOT_Y1 && mouseY < PLOT_Y2){
-  // print("In the box!");
-  float labelX, labelY;
-  // labelX = mouseX;
-  int bucketIndx = floor((mouseX - PLOT_X1) / rectW);
-  labelX = PLOT_X1 + (bucketIndx * rectW) + (rectW / 2);
-  pmv = buckets[bucketIndx]-noBuckets[bucketIndx];
-  labelY = map(pmv, maxBucketVal, -maxBucketVal, PLOT_Y1, PLOT_Y2);
-  String labelText = "Yes: " + buckets[bucketIndx] + "\nNo: " + noBuckets[bucketIndx];
-  fill(255,227);
-  noStroke();
-  rect(labelX, labelY-18, 100, 47);
-  ellipse(labelX, labelY, 20, 20);
-  fill(0);
-  text(labelText+11, labelX, labelY);
-}
-
-
   // Title
   fill(0);
   text(question + " " + productiveRespCounter + " responses.", PLOT_X1, PLOT_Y2);
@@ -246,6 +227,26 @@ if(mouseX > PLOT_X1 && mouseX < PLOT_X2 && mouseY > PLOT_Y1 && mouseY < PLOT_Y2)
       text(str(i), timeX, (PLOT_H/2 + PLOT_Y1)+textAscent()/2);
   }
   
+ // Draw labels
+if(mouseX > PLOT_X1 && mouseX < PLOT_X2 && mouseY > PLOT_Y1 && mouseY < PLOT_Y2){
+  // print("In the box!");
+  float labelX, labelY;
+  // labelX = mouseX;
+  int bucketIndx = floor((mouseX - PLOT_X1) / rectW);
+  labelX = PLOT_X1 + (bucketIndx * rectW) + (rectW / 2);
+  pmv = buckets[bucketIndx]-noBuckets[bucketIndx];
+  labelY = map(pmv, maxBucketVal, -maxBucketVal, PLOT_Y1, PLOT_Y2);
+  String labelText = "Yes: " + buckets[bucketIndx] + "\nNo: " + noBuckets[bucketIndx];
+  fill(255,227);
+  noStroke();
+  rect(labelX, labelY-18, 100, 47);
+  fill(0,227);
+  ellipse(labelX, labelY, 10, 10);
+  fill(0);
+  text(labelText+11, labelX, labelY);
+}
+
+
 }
 
 void keyPressed() {

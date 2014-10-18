@@ -160,20 +160,21 @@ void renderHisto(String _q) {
     }
   }
 
-  float rectW = PLOT_W/buckets.length;
+  float binW = PLOT_W / buckets.length;
+  float rectW = binW * pow(PHI, 1);
   // noStroke();
   int maxBucketVal = max(buckets) > max(noBuckets) ? max(buckets) : max(noBuckets); // find the bucket with the highest # of responses
   for (int i=0; i<buckets.length; i++) {
     // println(i + " " + buckets[i]);
-    float rectX = i * rectW + PLOT_X1;
+    float rectX = i * binW + (binW / 2) + (-rectW / 2) + PLOT_X1;
     // fill(map(buckets[i],0,max(buckets),0,250));
     strokeWeight(.25);
     stroke(0);
     fill(225);
-    rect(rectX, height/2, rectW, map(buckets[i], 0, maxBucketVal, 0, -PLOT_H/2));
+    rect(rectX, height / 2, rectW, map(buckets[i], 0, maxBucketVal, 0, -PLOT_H / 2));
     stroke(255);
     fill(75);
-    rect(rectX, height/2, rectW, map(noBuckets[i], 0, maxBucketVal, 0, PLOT_H/2));
+    rect(rectX, height / 2, rectW, map(noBuckets[i], 0, maxBucketVal, 0, PLOT_H / 2));
   }
 
 for (int k = 0; k < buckets.length; k++) {
@@ -188,21 +189,21 @@ for (int k = 0; k < buckets.length; k++) {
   // extra vertex added so that line starts on the first bucket
     float pmv = buckets[buckets.length-1] - noBuckets[buckets.length-1];
     float pmvY = map(pmv, maxBucketVal, -maxBucketVal, PLOT_Y1, PLOT_Y2);
-    float pmvX = PLOT_X1 - rectW/2;
+    float pmvX = PLOT_X1 - binW/2;
     curveVertex(pmvX, pmvY);
   
   for (int i=0; i<buckets.length; i++) {
    pmv = buckets[i]-noBuckets[i];
    pmvY = map(pmv, maxBucketVal, -maxBucketVal, PLOT_Y1, PLOT_Y2);
-   pmvX = map(i, 0, buckets.length, PLOT_X1, PLOT_X2)+rectW/2;
+   pmvX = map(i, 0, buckets.length, PLOT_X1, PLOT_X2)+binW/2;
     // fill(0);
-    // ellipse(pmvX, pmvY, rectW/2, rectW/2);
+    // ellipse(pmvX, pmvY, binW/2, binW/2);
     curveVertex(pmvX, pmvY);
   }
   // extra vertex added so that the line ends on the last bucket
      pmv = buckets[0]-noBuckets[0];
      pmvY = map(pmv, maxBucketVal, -maxBucketVal, PLOT_Y1, PLOT_Y2);
-     pmvX = PLOT_X2 + rectW/2;
+     pmvX = PLOT_X2 + binW/2;
     curveVertex(pmvX, pmvY);
   endShape();
   
@@ -232,8 +233,8 @@ if(mouseX > PLOT_X1 && mouseX < PLOT_X2 && mouseY > PLOT_Y1 && mouseY < PLOT_Y2)
   // print("In the box!");
   float labelX, labelY;
   // labelX = mouseX;
-  int bucketIndx = floor((mouseX - PLOT_X1) / rectW);
-  labelX = PLOT_X1 + (bucketIndx * rectW) + (rectW / 2);
+  int bucketIndx = floor((mouseX - PLOT_X1) / binW);
+  labelX = PLOT_X1 + (bucketIndx * binW) + (binW / 2);
   pmv = buckets[bucketIndx]-noBuckets[bucketIndx];
   labelY = map(pmv, maxBucketVal, -maxBucketVal, PLOT_Y1, PLOT_Y2);
   String labelText = "Yes: " + buckets[bucketIndx] + "\nNo: " + noBuckets[bucketIndx];

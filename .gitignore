@@ -32,6 +32,8 @@ web-export/
 out/
 savedImages/
 srcFiles/
+code/
+data/
 *.json
 *.jpg
 *.JPG

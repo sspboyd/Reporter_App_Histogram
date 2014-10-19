@@ -70,9 +70,9 @@ void setup() {
   snapshots = raj.getJSONArray("snapshots");
 
   // Define Variables for histogram bucket size and scale durations
-   startTime = 0 * 60; // in minutes
-   finishTime = 24 * 60; // in minutes
-   scaleDuration = (finishTime - startTime); 
+  startTime = 0 * 60; // in minutes
+  finishTime = 24 * 60; // in minutes
+  scaleDuration = (finishTime - startTime); 
 
 
   //  bucketSize = 60 * 24; // in minutes for a week view
@@ -91,16 +91,21 @@ void setup() {
   // buckets = new int[scaleDuration/bucketSize]; 
   // noBuckets = new int[scaleDuration/bucketSize];
 
-  question = "Have you been productive over the last couple of hours?";
+  // question = "Have you been productive over the last couple of hours?";
   // question = "Has today been productive so far?"
-  // question = "Did you eat after 9pm?");
-  // question = "Are you working?");
+  // question = "Did you eat after 9pm?";
+  question = "Are you working?";
 
 
 
   // noLoop();
   println("setup done: " + nf(millis() / 1000.0, 1, 2));
 }
+
+
+/*////////////////////////////////////////
+ DRAW
+ ////////////////////////////////////////*/
 
 void draw() {
   background(255);
@@ -111,8 +116,8 @@ void draw() {
 
 
 void renderHisto() {
-  buckets = new int[scaleDuration/bucketSize];
-  noBuckets = new int[scaleDuration/bucketSize];
+  buckets = new int[scaleDuration/bucketSize]; // reset array
+  noBuckets = new int[buckets.length]; // reset array
 
   productiveRespCounter = 0;
   missingQuestionPromptCount = 0;
@@ -166,6 +171,8 @@ void renderHisto() {
       }
     }
   }
+  maxBucketVal = max(buckets) > max(noBuckets) ? max(buckets) : max(noBuckets); // find the bucket with the highest # of responses
+
 
   renderBarChart();
   renderPlusMinusLine();
@@ -178,56 +185,54 @@ void renderHisto() {
 /*////////////////////////////////////////
  RENDER FUNCTIONS
  ////////////////////////////////////////*/
- 
+
 void renderBarChart(){
   // noStroke();
-  maxBucketVal = max(buckets) > max(noBuckets) ? max(buckets) : max(noBuckets); // find the bucket with the highest # of responses
   for (int i=0; i<buckets.length; i++) {
     // println(i + " " + buckets[i]);
     float rectX = i * binW + (binW / 2) + (-rectW / 2) + PLOT_X1;
     // fill(map(buckets[i],0,max(buckets),0,250));
-    strokeWeight(.25);
-    stroke(0);
-    fill(225);
+    noStroke();
+    fill(0, 29);
     rect(rectX, height / 2, rectW, map(buckets[i], 0, maxBucketVal, 0, -PLOT_H / 2));
-    stroke(255);
-    fill(75);
+    // stroke(255);
+    fill(0, 123);
     rect(rectX, height / 2, rectW, map(noBuckets[i], 0, maxBucketVal, 0, PLOT_H / 2));
   }
 }
 
 void renderPlusMinusLine(){
-    // Plus / Minus trend line
+  // Plus / Minus trend line
   noFill();
   strokeWeight(4);
   stroke(50);
   beginShape();
   // extra vertex added so that line starts on the first bucket
-    float pmv = buckets[buckets.length-1] - noBuckets[buckets.length-1];
-    float pmvY = map(pmv, maxBucketVal, -maxBucketVal, PLOT_Y1, PLOT_Y2);
-    float pmvX = PLOT_X1 - binW/2;
-    curveVertex(pmvX, pmvY);
-  
+  float pmv = buckets[buckets.length-1] - noBuckets[buckets.length-1];
+  float pmvY = map(pmv, maxBucketVal, -maxBucketVal, PLOT_Y1, PLOT_Y2);
+  float pmvX = PLOT_X1 - binW/2;
+  curveVertex(pmvX, pmvY);
+
   for (int i=0; i<buckets.length; i++) {
-   pmv = buckets[i]-noBuckets[i];
-   pmvY = map(pmv, maxBucketVal, -maxBucketVal, PLOT_Y1, PLOT_Y2);
-   pmvX = map(i, 0, buckets.length, PLOT_X1, PLOT_X2)+binW/2;
+    pmv = buckets[i]-noBuckets[i];
+    pmvY = map(pmv, maxBucketVal, -maxBucketVal, PLOT_Y1, PLOT_Y2);
+    pmvX = map(i, 0, buckets.length, PLOT_X1, PLOT_X2)+binW/2;
     // fill(0);
     // ellipse(pmvX, pmvY, binW/2, binW/2);
     curveVertex(pmvX, pmvY);
   }
   // extra vertex added so that the line ends on the last bucket
-     pmv = buckets[0]-noBuckets[0];
-     pmvY = map(pmv, maxBucketVal, -maxBucketVal, PLOT_Y1, PLOT_Y2);
-     pmvX = PLOT_X2 + binW/2;
-    curveVertex(pmvX, pmvY);
+  pmv = buckets[0]-noBuckets[0];
+  pmvY = map(pmv, maxBucketVal, -maxBucketVal, PLOT_Y1, PLOT_Y2);
+  pmvX = PLOT_X2 + binW/2;
+  curveVertex(pmvX, pmvY);
   endShape();
 }
 
 void renderVertScale(){
   // Vertical Scale
-  strokeWeight(.25);
-  stroke(47);
+  strokeWeight(0.25);
+  stroke(0, 29);
   line(PLOT_X1, PLOT_Y1,PLOT_X1, PLOT_Y2);
   text(maxBucketVal, PLOT_X1 - textWidth(str(maxBucketVal)) - 5, PLOT_Y1 + textAscent()/2);  
   text(maxBucketVal, PLOT_X1 - textWidth(str(maxBucketVal)) - 5, PLOT_Y2 - textAscent()/2);
@@ -235,17 +240,21 @@ void renderVertScale(){
 
 void renderHorizScale(){
   // Horizontal Scale (Time in hours)
-  for(int i = startTime/60; i < (finishTime) / 60; i++){
-      float timeX = map(i, startTime/60, finishTime/60, PLOT_X1, PLOT_X2);
-      fill(29);
-      text(str(i), timeX+1, (PLOT_H/2 + PLOT_Y1)+1+textAscent()/2);
-      fill(250);
-      text(str(i), timeX, (PLOT_H/2 + PLOT_Y1)+textAscent()/2);
+  stroke(47);
+  strokeWeight(.25);
+  line(PLOT_X1, PLOT_Y1 + (PLOT_H / 2), PLOT_X2, PLOT_Y1 + (PLOT_H / 2));
+  for(int i = startTime / 60; i < finishTime / 60; i++){ // div by 60 to convert to hours
+    float timeX = map(i, startTime / 60, finishTime / 60, PLOT_X1, PLOT_X2) + (binW / 2) - (textWidth(str(i)) / 2); // not quite right here
+    fill(0,76);
+    text(str(i), timeX, PLOT_Y2 - textAscent());
+    stroke(0, 76);
+    strokeWeight(0.25);
+    line(timeX, PLOT_Y1, timeX, PLOT_Y2 - textAscent()); // almost but not quite either
   }
 }
 
 void renderLabels(){
-    if(mouseX > PLOT_X1 && mouseX < PLOT_X2 && mouseY > PLOT_Y1 && mouseY < PLOT_Y2){
+  if(mouseX > PLOT_X1 && mouseX < PLOT_X2 && mouseY > PLOT_Y1 && mouseY < PLOT_Y2){
     // print("In the box!");
     float labelX, labelY;
     // labelX = mouseX;
@@ -279,20 +288,6 @@ void renderSig(){
   text("sspboyd", PLOT_X2-textWidth("sspboyd"), PLOT_Y2);
 }
 
-void keyPressed() {
-  if (key == 'S') screenCap(".tif");
-
-  if (key == 'L'){
-  println("bucketSize == " + bucketSize);
-  println("buckets == " + buckets.length);
-  println("noBuckets == " + noBuckets.length);
-for (int i = 0; i < buckets.length; ++i) {
-  println("Yes bucket #" + i + " == " + buckets[i]);
-  println("No bucket  #" + i + " == " + noBuckets[i]);
-}
-  }
-}
-
 void drawFreqCurve(){
   // draws a line representing the percentage of times an answer is given during a period of time
   // eg. 29% yes in bin 1, 47% yes in bin 2, 76% yes in bin 3...
@@ -313,8 +308,26 @@ void drawFreqCurve(){
   */
 }
 
+void keyPressed() {
+  if (key == 'S') screenCap(".tif");
+
+  if (key == 'L'){
+    println("bucketSize == " + bucketSize);
+    println("buckets == " + buckets.length);
+    println("noBuckets == " + noBuckets.length);
+    for (int i = 0; i < buckets.length; ++i) {
+      println("Yes bucket #" + i + " == " + buckets[i]);
+      println("No bucket  #" + i + " == " + noBuckets[i]);
+    }
+  }
+}
+
 void mousePressed() {
 }
+
+/*////////////////////////////////////////
+ UTILITY FUNCTIONS
+ ////////////////////////////////////////*/
 
 String generateSaveImgFileName(String fileType) {
   String fileName;
@@ -337,4 +350,3 @@ String getSketchName() {
   String[] path = split(sketchPath, "/");
   return path[path.length-1];
 }
-

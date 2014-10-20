@@ -18,7 +18,6 @@ int productiveRespCounter = 0;
 int missingQuestionPromptCount = 0;
 int maxBucketVal = 0;
 float binW;
-float rectW;
 
 
 //Declare Globals
@@ -27,6 +26,7 @@ final float PHI = 0.618033989;
 
 // Declare Font Variables
 PFont mainTitleF;
+PFont detailF;
 
 boolean PDFOUT = false;
 
@@ -45,17 +45,18 @@ void setup() {
     size(1350, 450, PDF, generateSaveImgFileName(".pdf"));
   }
   else {
-    size(1200, 450); // quarter page size
+    size(1350, 450); // quarter page size
   }
 
   mainTitleF = createFont("Helvetica", 20);  //requires a font file in the data folder?
-  textFont(mainTitleF);
+  detailF = createFont("Helvetica", 14);  //requires a font file in the data folder?
+  textFont(detailF);
   margin = width * pow(PHI, 7);
   println("margin: " + margin);
   PLOT_X1 = margin;
   PLOT_X2 = width-margin;
   PLOT_Y1 = margin;
-  PLOT_Y2 = height-margin;
+  PLOT_Y2 = height - (margin + margin);
   PLOT_W = PLOT_X2 - PLOT_X1;
   PLOT_H = PLOT_Y2 - PLOT_Y1;
 
@@ -78,11 +79,9 @@ void setup() {
   //  bucketSize = 60 * 24; // in minutes for a week view
   bucketSize = 30; // in minutes
   buckets = new int[scaleDuration/bucketSize];
-  noBuckets = new int[scaleDuration/bucketSize];
+  noBuckets = new int[buckets.length];
 
   binW = PLOT_W / buckets.length;
-  rectW = binW * pow(PHI, 1);
-
 
   // If measuring over the course of a day
   // no need to declare twice. Already declaring at start of draw. 
@@ -91,10 +90,10 @@ void setup() {
   // buckets = new int[scaleDuration/bucketSize]; 
   // noBuckets = new int[scaleDuration/bucketSize];
 
-  // question = "Have you been productive over the last couple of hours?";
+  question = "Have you been productive over the last couple of hours?";
   // question = "Has today been productive so far?"
   // question = "Did you eat after 9pm?";
-  question = "Are you working?";
+  // question = "Are you working?";
 
 
 
@@ -172,9 +171,11 @@ void renderHisto() {
     }
   }
   maxBucketVal = max(buckets) > max(noBuckets) ? max(buckets) : max(noBuckets); // find the bucket with the highest # of responses
+  maxBucketVal = (floor(maxBucketVal / 10) + 1) * 10;
 
 
   renderBarChart();
+  renderPlusMinusPoints();
   renderPlusMinusLine();
   renderVertScale(); 
   renderHorizScale();
@@ -188,24 +189,27 @@ void renderHisto() {
 
 void renderBarChart(){
   // noStroke();
+  float rectW = binW * pow(PHI, 3);
+  // float rectW = binW;
+
   for (int i=0; i<buckets.length; i++) {
     // println(i + " " + buckets[i]);
     float rectX = i * binW + (binW / 2) + (-rectW / 2) + PLOT_X1;
     // fill(map(buckets[i],0,max(buckets),0,250));
     noStroke();
-    fill(0, 29);
-    rect(rectX, height / 2, rectW, map(buckets[i], 0, maxBucketVal, 0, -PLOT_H / 2));
+    fill(0, 47);
+    rect(rectX, PLOT_X1 + (PLOT_H / 2), rectW, map(buckets[i], 0, maxBucketVal, 0, -PLOT_H / 2));
     // stroke(255);
     fill(0, 123);
-    rect(rectX, height / 2, rectW, map(noBuckets[i], 0, maxBucketVal, 0, PLOT_H / 2));
+    rect(rectX, PLOT_X1 + (PLOT_H / 2), rectW, map(noBuckets[i], 0, maxBucketVal, 0, PLOT_H / 2));
   }
 }
 
 void renderPlusMinusLine(){
   // Plus / Minus trend line
   noFill();
-  strokeWeight(4);
-  stroke(50);
+  strokeWeight(2);
+  stroke(0, 76);
   beginShape();
   // extra vertex added so that line starts on the first bucket
   float pmv = buckets[buckets.length-1] - noBuckets[buckets.length-1];
@@ -229,13 +233,34 @@ void renderPlusMinusLine(){
   endShape();
 }
 
+void renderPlusMinusPoints(){
+  // Plus / Minus trend line
+  // extra vertex added so that line starts on the first bucket
+  float pmv, pmvY, pmvX;
+  for (int i=0; i<buckets.length; i++) {
+    pmv  = buckets[i] - noBuckets[i];
+    pmvX = map(i, 0, buckets.length, PLOT_X1, PLOT_X2) + (binW / 2);
+    pmvY = map(pmv, maxBucketVal, -maxBucketVal, PLOT_Y1, PLOT_Y2);
+    fill(255, 200);
+    stroke(29);
+    strokeWeight(0.5);
+    float circDia = binW * pow(PHI,3);
+    ellipse(pmvX, pmvY, circDia, circDia);
+    }
+  
+}
+
 void renderVertScale(){
   // Vertical Scale
   strokeWeight(0.25);
   stroke(0, 29);
-  line(PLOT_X1, PLOT_Y1,PLOT_X1, PLOT_Y2);
-  text(maxBucketVal, PLOT_X1 - textWidth(str(maxBucketVal)) - 5, PLOT_Y1 + textAscent()/2);  
-  text(maxBucketVal, PLOT_X1 - textWidth(str(maxBucketVal)) - 5, PLOT_Y2 - textAscent()/2);
+  line(PLOT_X1, PLOT_Y1, PLOT_X1, PLOT_Y2);
+  fill(0, 76);
+  textFont(detailF);
+  text(maxBucketVal, PLOT_X1 - textWidth(str(maxBucketVal)) - 5, PLOT_Y1 + textAscent()); // Yes top scale #
+  text("YES", PLOT_X1 - textWidth("YES") - 5, PLOT_Y1 + (PLOT_H / 4));
+  text(maxBucketVal, PLOT_X1 - textWidth(str(maxBucketVal)) - 5, PLOT_Y2 - 0); // No top scale #
+  text("NO", PLOT_X1 - textWidth("NO") - 5, PLOT_Y2 - (PLOT_H / 4));
 }
 
 void renderHorizScale(){
@@ -243,13 +268,15 @@ void renderHorizScale(){
   stroke(47);
   strokeWeight(.25);
   line(PLOT_X1, PLOT_Y1 + (PLOT_H / 2), PLOT_X2, PLOT_Y1 + (PLOT_H / 2));
+  float timeX;
+  textFont(detailF);
   for(int i = startTime / 60; i < finishTime / 60; i++){ // div by 60 to convert to hours
-    float timeX = map(i, startTime / 60, finishTime / 60, PLOT_X1, PLOT_X2) + (binW / 2) - (textWidth(str(i)) / 2); // not quite right here
-    fill(0,76);
-    text(str(i), timeX, PLOT_Y2 - textAscent());
+    timeX = map(i, startTime / 60, finishTime / 60, PLOT_X1, PLOT_X2) + (binW / 2);
+    fill(0, 76);
+    text(str(i), timeX - textWidth(str(i)) / 2, PLOT_Y2 + textAscent() + 2);
     stroke(0, 76);
     strokeWeight(0.25);
-    line(timeX, PLOT_Y1, timeX, PLOT_Y2 - textAscent()); // almost but not quite either
+    line(timeX, PLOT_Y1, timeX, PLOT_Y2); // almost but not quite either
   }
 }
 
@@ -265,12 +292,14 @@ void renderLabels(){
     labelY = map(pmv, maxBucketVal, -maxBucketVal, PLOT_Y1, PLOT_Y2);
     String labelText = "Yes: " + buckets[bucketIndx] + "\nNo: " + noBuckets[bucketIndx];
     // String labelText = "No: " + noBuckets[bucketIndx];
-    fill(255,227);
+    fill(255,123);
     noStroke();
     rect(labelX, labelY-18, 100, 47);
     fill(0,227);
-    ellipse(labelX, labelY, 10, 10);
+    float circDia = binW * pow(PHI, 3);
+    ellipse(labelX, labelY, circDia, circDia);
     fill(0);
+    textFont(detailF);
     text(labelText, labelX + 11, labelY);
   }
 }
@@ -278,14 +307,15 @@ void renderLabels(){
 void renderTitles(){
   // Title
   fill(0);
-  text(question + " " + productiveRespCounter + " responses.", PLOT_X1, PLOT_Y2);
+  textFont(mainTitleF);
+  text("\"" + question + "\" " + productiveRespCounter + " responses.", PLOT_X1, PLOT_Y2+margin);
 }
 
 void renderSig(){
   fill(100);
   stroke(0);
-  textFont(mainTitleF);
-  text("sspboyd", PLOT_X2-textWidth("sspboyd"), PLOT_Y2);
+  textFont(detailF);
+  text("sspboyd", PLOT_X2-textWidth("sspboyd"), PLOT_Y2 + margin);
 }
 
 void drawFreqCurve(){

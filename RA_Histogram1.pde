@@ -176,7 +176,8 @@ void renderHisto() {
 
   renderBarChart();
   renderPlusMinusPoints();
-  renderPlusMinusLine();
+  pctProductiveLine();
+  //renderPlusMinusLine();
   renderVertScale(); 
   renderHorizScale();
   renderLabels();
@@ -189,8 +190,8 @@ void renderHisto() {
 
 void renderBarChart(){
   // noStroke();
-  float rectW = binW * pow(PHI, 3);
-  // float rectW = binW;
+  // float rectW = binW * pow(PHI, 3);
+  float rectW = binW;
 
   for (int i=0; i<buckets.length; i++) {
     // println(i + " " + buckets[i]);
@@ -203,6 +204,34 @@ void renderBarChart(){
     fill(0, 123);
     rect(rectX, PLOT_X1 + (PLOT_H / 2), rectW, map(noBuckets[i], 0, maxBucketVal, 0, PLOT_H / 2));
   }
+}
+
+void pctProductiveLine(){
+  // Plus / Minus trend line
+  noFill();
+  strokeWeight(2);
+  stroke(0, 76);
+  beginShape();
+  // extra vertex added so that line starts on the first bucket
+  float pmv = buckets[buckets.length-1] / (buckets[buckets.length-1] + noBuckets[buckets.length-1]*1.0);
+  float pmvY = map(pmv, 1, 0, PLOT_Y1, PLOT_Y2);
+  float pmvX = PLOT_X1 - binW/2;
+  curveVertex(pmvX, pmvY);
+
+  for (int i=0; i<buckets.length; i++) {
+    pmv = buckets[i] / (buckets[i] + noBuckets[i] * 1.0);
+    pmvY = map(pmv, 1, 0, PLOT_Y1, PLOT_Y2);
+    pmvX = map(i, 0, buckets.length, PLOT_X1, PLOT_X2)+binW/2;
+    // fill(0);
+    // ellipse(pmvX, pmvY, binW/2, binW/2);
+    curveVertex(pmvX, pmvY);
+  }
+  // extra vertex added so that the line ends on the last bucket
+  pmv = buckets[0] / (buckets[0] + noBuckets[0]);
+  pmvY = map(pmv, 1, 0, PLOT_Y1, PLOT_Y2);
+  pmvX = PLOT_X2 + binW/2;
+  curveVertex(pmvX, pmvY);
+  endShape();
 }
 
 void renderPlusMinusLine(){
@@ -237,6 +266,8 @@ void renderPlusMinusPoints(){
   // Plus / Minus trend line
   // extra vertex added so that line starts on the first bucket
   float pmv, pmvY, pmvX;
+  // float circDia = binW * pow(PHI,3); // too big when binW is large
+  float circDia = 7;
   for (int i=0; i<buckets.length; i++) {
     pmv  = buckets[i] - noBuckets[i];
     pmvX = map(i, 0, buckets.length, PLOT_X1, PLOT_X2) + (binW / 2);
@@ -244,10 +275,8 @@ void renderPlusMinusPoints(){
     fill(255, 200);
     stroke(29);
     strokeWeight(0.5);
-    float circDia = binW * pow(PHI,3);
     ellipse(pmvX, pmvY, circDia, circDia);
-    }
-  
+    }  
 }
 
 void renderVertScale(){

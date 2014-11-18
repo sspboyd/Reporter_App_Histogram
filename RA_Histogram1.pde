@@ -3,6 +3,7 @@ import org.joda.time.*;
 
 JSONObject raj;
 JSONArray snapshots;
+
 DateTimeFormatter dtf;
 int startTime; // starting time/point (?) of the scale in minutes
 int finishTime; // finishing time/point (?) in minutes
@@ -63,11 +64,10 @@ void setup() {
   rSn = 47; // 29, 18;
   randomSeed(rSn);
 
-
-  raj = loadJSONObject("reporter-export-20140903.json");
-
   dtf = ISODateTimeFormat.dateTimeNoMillis();
 
+  // Global Vars to hold the JSON data from Reporter App
+  raj = loadJSONObject("reporter-export-20140903.json");
   snapshots = raj.getJSONArray("snapshots");
 
   // Define Variables for histogram bucket size and scale durations
@@ -90,7 +90,10 @@ void setup() {
   // buckets = new int[scaleDuration/bucketSize]; 
   // noBuckets = new int[scaleDuration/bucketSize];
 
+
+  // Pick one of the Yes/No questions
   question = "Have you been productive over the last couple of hours?";
+  // question = "Are you in front of a screen?";
   // question = "Has today been productive so far?"
   // question = "Did you eat after 9pm?";
   // question = "Are you working?";
@@ -121,6 +124,7 @@ void renderHisto() {
   productiveRespCounter = 0;
   missingQuestionPromptCount = 0;
 
+  // Begin parsing the JSON from Reporter App
   for (int i = 0; i < snapshots.size(); i+=1) {
     JSONObject snap = snapshots.getJSONObject(i);
     String sdts = snap.getString("date"); // sdts = snapshot datetime string
@@ -135,12 +139,12 @@ void renderHisto() {
       // println(i + " oops, something went wrong");
     }
 
-    JSONArray resps = snap.getJSONArray("responses");
+    JSONArray resps = snap.getJSONArray("responses"); // grab the responses from the current snapshot
     for (int j = 0; j < resps.size(); j+=1) { // +=100 to make sure it only shows 1 for each snap
-      JSONObject resp = resps.getJSONObject(j);
+      JSONObject resp = resps.getJSONObject(j); // grab each of the responses individually
       // println("resp == " + resp);
       String questionPrompt = "";
-      if (resp.hasKey("questionPrompt")) {  
+      if (resp.hasKey("questionPrompt")) {  // test to make sure there is a question prompt associated with this response. I've found a few times that responses are missing questions!
         questionPrompt = resp.getString("questionPrompt");
         // println("resp question: " + question);
       }
@@ -149,7 +153,7 @@ void renderHisto() {
       }
 
       if (questionPrompt.equals(question) == true) {
-        if (resp.hasKey("answeredOptions")) {
+        if (resp.hasKey("answeredOptions")) { 
           JSONArray ans = resp.getJSONArray("answeredOptions");
           if (ans.getString(0).equals("Yes")) {
             productiveRespCounter++;
@@ -176,8 +180,8 @@ void renderHisto() {
 
   renderBarChart();
   renderPlusMinusPoints();
-  pctProductiveLine();
-  //renderPlusMinusLine();
+  // pctProductiveLine();
+  renderPlusMinusLine();
   renderVertScale(); 
   renderHorizScale();
   renderLabels();
